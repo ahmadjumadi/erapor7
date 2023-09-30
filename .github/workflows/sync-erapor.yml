@@ -5,7 +5,7 @@
 # https://github.com/actions/stale
 name: Sync and merge upstream repository erapor v7
 
-with:
+env:
   # URL of gitHub public upstream repo
   upstream_repo: "https://github.com/eraporsmk/erapor7.git"
   # Branch to merge from upstream (defaults to downstream branch)
