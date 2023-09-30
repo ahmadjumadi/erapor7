@@ -1,0 +1,37 @@
+# This workflow warns and then closes issues and PRs that have had no activity for a specified amount of time.
+#
+# You can adjust the behavior by modifying this file.
+# For more information, see:
+# https://github.com/actions/stale
+name: Sync and merge upstream repository erapor v7
+
+with:
+  # URL of gitHub public upstream repo
+  upstream_repo: "https://github.com/eraporsmk/erapor7.git"
+  # Branch to merge from upstream (defaults to downstream branch)
+  upstream_branch: main
+  # Branch to merge into downstream
+  downstream_branch: main
+  # GitHub Bot token
+  token: ${{ secrets.GITHUB_TOKEN }}
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 15 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Sync to Upstream Repository
+        uses: ahmadjumadi/erapor7
+        with: 
+          upstream_repo: ${{ env.UPSTREAM_URL }}
+          upstream_branch: ${{ env.UPSTREAM_BRANCH }}
+          downstream_branch: ${{ env.DOWNSTREAM_BRANCH }}
+          token: ${{ env.WORKFLOW_TOKEN }}
+          fetch_args: ${{ env.FETCH_ARGS }}
+          merge_args: ${{ env.MERGE_ARGS }}
+          push_args: ${{ env.PUSH_ARGS }}
+          spawn_logs: ${{ env.SPAWN_LOGS }}
