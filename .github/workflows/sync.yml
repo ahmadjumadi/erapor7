@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/stale@v5
+    # - uses: actions/stale@v5
 
     - name: Sync and merge upstream repository with your current repository
       uses: ahmadjumadi/erapor7@4e07655e14bdabc9f3f681fc0c1a3e545771abdd
