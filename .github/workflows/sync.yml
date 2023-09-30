@@ -18,7 +18,7 @@ jobs:
     - uses: actions/stale@v5
 
     - name: Sync and merge upstream repository with your current repository
-      uses: ahmadjumadi/erapor7@7.0.0
+      uses: ahmadjumadi/erapor7@4e07655e14bdabc9f3f681fc0c1a3e545771abdd
       with:
         # URL of gitHub public upstream repo
         upstream_repo: https://github.com/eraporsmk/erapor7 
