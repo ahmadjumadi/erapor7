@@ -34,6 +34,9 @@ Route::group(['prefix' => 'auth'], function () {
   Route::get('/allow-register', [AuthController::class, 'allow_register']);
   Route::post('login', [AuthController::class, 'login']);
   Route::post('register', [AuthController::class, 'register']);
+  Route::post('forget-password', [AuthController::class, 'submitForgetPasswordForm']); 
+  Route::post('get-email', [AuthController::class, 'get_email']); 
+  Route::post('reset-password', [AuthController::class, 'submitResetPasswordForm']);
   Route::group(['middleware' => 'auth:sanctum'], function() {
     Route::get('logout', [AuthController::class, 'logout']);
     Route::get('user', [AuthController::class, 'user']);
@@ -63,6 +66,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/rombongan-belajar', [SinkronisasiController::class, 'rombongan_belajar']);
     Route::post('/matev-rapor', [SinkronisasiController::class, 'matev_rapor']);
     Route::post('/kirim-nilai', [SinkronisasiController::class, 'kirim_nilai']);
+    Route::get('/get-matev-rapor', [SinkronisasiController::class, 'get_matev_rapor']);
   });
   Route::group(['prefix' => 'users'], function () {
     Route::get('/', [UsersController::class, 'index']);
@@ -87,6 +91,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/update', [GuruController::class, 'update']);
     Route::post('/upload', [GuruController::class, 'upload']);
     Route::post('/simpan', [GuruController::class, 'simpan']);
+    Route::post('/hapus', [GuruController::class, 'hapus']);
   });
   Route::group(['prefix' => 'rombongan-belajar'], function () {
     Route::get('/', [RombelController::class, 'index']);
@@ -102,6 +107,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/detil', [PdController::class, 'detil']);
     Route::post('/update', [PdController::class, 'update']);
     Route::post('/get-pd', [PdController::class, 'get_pd']);
+    Route::post('/unduh-legger', [PdController::class, 'unduh_legger']);
   });
   Route::group(['prefix' => 'referensi'], function () {
     Route::get('/mata-pelajaran', [ReferensiController::class, 'mata_pelajaran']);
@@ -162,10 +168,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/get-teknik-penilaian', [PenilaianController::class, 'get_teknik_penilaian']);
     Route::post('/get-cp', [PenilaianController::class, 'get_cp']);
     Route::post('/get-tp', [PenilaianController::class, 'get_tp']);
-    Route::post('/get-nilai-tp', [PenilaianController::class, 'get_nilai_tp']);
-    Route::post('/get-nilai-akhir-sumatif', [PenilaianController::class, 'get_nilai_akhir_sumatif']);
-    Route::post('/simpan-nilai-tp', [PenilaianController::class, 'simpan_nilai_tp']);
-    Route::post('/simpan-nilai-akhir-sumatif', [PenilaianController::class, 'simpan_nilai_akhir_sumatif']);
+    Route::post('/get-sumatif-lingkup-materi', [PenilaianController::class, 'get_nilai_tp']);
+    Route::post('/get-sumatif-akhir-semester', [PenilaianController::class, 'get_nilai_akhir_sumatif']);
+    Route::post('/simpan-sumatif-lingkup-materi', [PenilaianController::class, 'simpan_nilai_tp']);
+    Route::post('/simpan-sumatif-akhir-semester', [PenilaianController::class, 'simpan_nilai_akhir_sumatif']);
   });
   Route::group(['prefix' => 'ukk'], function () {
     Route::get('/paket-ukk', [UkkController::class, 'paket_ukk']);

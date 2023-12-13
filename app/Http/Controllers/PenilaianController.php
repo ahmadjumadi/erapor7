@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\Rombongan_belajar;
 use App\Models\Pembelajaran;
@@ -29,7 +30,9 @@ use App\Models\Capaian_pembelajaran;
 use App\Models\Nilai_tp;
 use App\Models\Nilai_sumatif;
 use Maatwebsite\Excel\Facades\Excel;
+use Rap2hpoutre\FastExcel\FastExcel;
 use App\Imports\NilaiAkhirImport;
+use App\Imports\NilaiSumatifImport;
 use Carbon\Carbon;
 use Storage;
 
@@ -224,6 +227,9 @@ class PenilaianController extends Controller
                         'nilai' => ($nilai_akhir) ? number_format($nilai_akhir,0) : 0,
                     ]
                 );
+            } else {
+                $kompetensi_id = (request()->merdeka) ? 4 : 1;
+                Nilai_akhir::where('anggota_rombel_id', $anggota_rombel_id)->where('pembelajaran_id', request()->pembelajaran_id)->where('kompetensi_id', $kompetensi_id)->delete();
             }
         }
         $segments = [];
@@ -244,15 +250,19 @@ class PenilaianController extends Controller
                         'kd_id' => $tp->kd_id,
                     ];
                 }
-                Tp_nilai::updateOrCreate(
-                    [
-                        'sekolah_id' => request()->sekolah_id,
-                        'anggota_rombel_id' => $anggota_rombel_id,
-                        'tp_id' => $tp_id,
-                        'kompeten' => $kompeten,
-                    ],
-                    $update
-                );
+                if($kompeten > -1){
+                    Tp_nilai::updateOrCreate(
+                        [
+                            'sekolah_id' => request()->sekolah_id,
+                            'anggota_rombel_id' => $anggota_rombel_id,
+                            'tp_id' => $tp_id,
+                            'kompeten' => $kompeten,
+                        ],
+                        $update
+                    );
+                } else {
+                    Tp_nilai::where('anggota_rombel_id', $anggota_rombel_id)->where('tp_id', $tp_id)->delete();
+                }
             }
         }
         if($insert){
@@ -294,21 +304,23 @@ class PenilaianController extends Controller
                     ]
                 );
             } else {
-                Nilai_tp::where('anggota_rombel_id', $anggota_rombel_id)->where('pembelajaran_id', request()->pembelajaran_id)->where('tp_id', $tp_id)->delete();
+                if(Str::isUuid($anggota_rombel_id)){
+                    Nilai_tp::where('anggota_rombel_id', $anggota_rombel_id)->where('pembelajaran_id', request()->pembelajaran_id)->where('tp_id', $tp_id)->delete();
+                }
             }
         }
         if($insert){
             $data = [
                 'icon' => 'success',
                 'title' => 'Berhasil!',
-                'text' => 'Nilai TP berhasil disimpan',
+                'text' => 'Nilai Sumatif Lingkup Materi berhasil disimpan',
                 'request' => request()->all(),
             ];
         } else {
             $data = [
                 'icon' => 'error',
                 'title' => 'Gagal!',
-                'text' => 'Nilai TP gagal disimpan. Silahkan coba beberapa saat lagi!',
+                'text' => 'Nilai Sumatif Lingkup Materi gagal disimpan. Silahkan coba beberapa saat lagi!',
             ];
         }
         return response()->json($data);
@@ -322,13 +334,34 @@ class PenilaianController extends Controller
                 'template_excel.mimes' => 'File harus berupa file dengan ekstensi: xlsx.',
             ]
         );
+        $list = [];
+        $collection = [];
         $file_path = request()->template_excel->store('files', 'public');
-        Excel::import(new NilaiAkhirImport(request()->rombongan_belajar_id, request()->pembelajaran_id, request()->sekolah_id, request()->merdeka), storage_path('/app/public/'.$file_path));
+        if(request()->opsi == 'sumatif-lingkup-materi' || request()->opsi == 'sumatif-akhir-semester'){
+            $collection = (new FastExcel)->import(storage_path('/app/public/'.$file_path));
+            foreach($collection as $items){
+                $siswa = [];
+                foreach($items as $key => $item){
+                    if($key != 'NO' || $key != 'PD_ID' || $key != 'NAMA'){
+                        $tp = Tujuan_pembelajaran::where(DB::raw('TRIM(deskripsi)'), trim($key))->first();
+                        $key = ($tp) ? $tp->tp_id : $key;    
+                    }
+                    $siswa[$key] = $item;
+                    unset($siswa['NO'], $siswa['NAMA']);
+                }
+                $list[] = $siswa;
+            }    
+        } else {
+            Excel::import(new NilaiAkhirImport(request()->rombongan_belajar_id, request()->pembelajaran_id, request()->sekolah_id, request()->merdeka), storage_path('/app/public/'.$file_path));
+        }
         Storage::disk('public')->delete($file_path);
+        
         $data = [
             'icon' => 'success',
             'title' => 'Berhasil!',
             'text' => 'Nilai Akhir berhasil disimpan',
+            'collection' => $collection,
+            'data_nilai' => $list,
         ];
         return response()->json($data);
     }
@@ -349,11 +382,11 @@ class PenilaianController extends Controller
                 },
                 'tp_kompeten' => function($query){
                     $this->wherehas($query);
-                    $query->with(['tp']);
+                    $query->withWhereHas('tp');
                 },
                 'tp_inkompeten' => function($query){
                     $this->wherehas($query);
-                    $query->with(['tp']);
+                    $query->withWhereHas('tp');
                 },
             ]);
         };
@@ -928,11 +961,15 @@ class PenilaianController extends Controller
     public function get_nilai_akhir_sumatif(){
         $get_mapel_agama = filter_agama_siswa(request()->pembelajaran_id, request()->rombongan_belajar_id);
         $data = [
-            'data_siswa' => Peserta_didik::withWhereHas('anggota_rombel', function($query) use ($get_mapel_agama){
+            'data_siswa' => Peserta_didik::withWhereHas('anggota_rombel', function($query){
                 $query->where('rombongan_belajar_id', request()->rombongan_belajar_id);
                 $query->with(['nilai_sumatif' => function($query){
                     $query->where('pembelajaran_id', request()->pembelajaran_id);
                 }]);
+            })->where(function($query) use ($get_mapel_agama){
+                if($get_mapel_agama){
+                    $query->where('agama_id', $get_mapel_agama);
+                }
             })->orderBy('nama')->get(),
         ];
         return response()->json(['status' => 'success', 'data' => $data]);
@@ -965,14 +1002,14 @@ class PenilaianController extends Controller
             $data = [
                 'icon' => 'success',
                 'title' => 'Berhasil!',
-                'text' => 'Nilai TP berhasil disimpan',
+                'text' => 'Nilai Sumatif Akhir Semester berhasil disimpan',
                 'request' => request()->all(),
             ];
         } else {
             $data = [
                 'icon' => 'error',
                 'title' => 'Gagal!',
-                'text' => 'Nilai TP gagal disimpan. Silahkan coba beberapa saat lagi!',
+                'text' => 'Nilai Sumatif Akhir Semester gagal disimpan. Silahkan coba beberapa saat lagi!',
             ];
         }
         return response()->json($data);

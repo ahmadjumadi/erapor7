@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Rap2hpoutre\FastExcel\FastExcel;
 use App\Models\Guru;
 use App\Models\Gelar;
@@ -178,10 +179,10 @@ class GuruController extends Controller
         request()->validate(
             [
                 'nama.*' => 'required',
-                'nik.*' => 'required|numeric|digits:16|unique:guru,nik',
+                'nik.*' => 'required|numeric|digits:16|unique:guru,nik,NULL,guru_id,deleted_at,NULL',
                 'tanggal_lahir.*' => 'required|date|date_format:Y-m-d',
                 'agama.*' => 'required|exists:pgsql.ref.agama,nama',
-                'email.*' => 'required|unique:guru,email',
+                'email.*' => 'required|unique:guru,email,NULL,guru_id,deleted_at,NULL',
             ],
             [
                 'nama.*.required' => 'Nama tidak boleh kosong!',
@@ -235,6 +236,31 @@ class GuruController extends Controller
             'text' => 'Data '.ucfirst(request()->jenis_gtk).' berhasil disimpan',
             'request' => request()->all(),
         ];
+        return response()->json($data);
+    }
+    public function hapus(){
+        $find = Guru::find(request()->id);
+        if($find){
+            if($find->delete()){
+                $data = [
+                    'icon' => 'success',
+                    'title' => 'Berhasil!',
+                    'text' => 'Data '.request()->data.' berhasil dihapus',
+                ];
+            } else {
+                $data = [
+                    'icon' => 'error',
+                    'title' => 'Gagal!',
+                    'text' => 'Data '.request()->data.' gagal dihapus',
+                ];
+            }
+        } else {
+            $data = [
+                'icon' => 'error',
+                'title' => 'Gagal!',
+                'text' => 'Data '.request()->data.' tidak ditemukan',
+            ];
+        }
         return response()->json($data);
     }
 }

@@ -19,7 +19,9 @@ use App\Models\Deskripsi_mata_pelajaran;
 class DashboardController extends Controller
 {
    private function dashboard_admin(){
-      $sekolah = Sekolah::with(['kepala_sekolah'])->withCount([
+      $sekolah = Sekolah::with(['kasek' => function($query){
+         $query->where('semester_id', request()->semester_id);
+      }])->withCount([
          'ptk' => function($query){
              $query->where('is_dapodik', 1);
              $query->whereDoesntHave('ptk_keluar', function($query){
@@ -102,7 +104,6 @@ class DashboardController extends Controller
             'app_version' => get_setting('app_version'),
             'db_version' => get_setting('db_version'),
             'status_penilaian' => ($status_penilaian && $status_penilaian->status) ? TRUE: FALSE,
-            'status' => $status_penilaian->status,
          ],
       ];
       return $data;
@@ -118,6 +119,7 @@ class DashboardController extends Controller
             $result[] = [
                'no' => $no++,
                'pembelajaran_id' => $pembelajaran->pembelajaran_id,
+               'induk_pembelajaran_id' => $pembelajaran->induk_pembelajaran_id,
                'nama_mata_pelajaran' => $pembelajaran->nama_mata_pelajaran,
                'rombel' => $rombel->nama,
                'wali_kelas' => ($rombel->wali_kelas) ? $rombel->wali_kelas->nama_lengkap : '-',
@@ -261,6 +263,7 @@ class DashboardController extends Controller
             $result[] = [
                'no' => $no++,
                'pembelajaran_id' => $item->pembelajaran_id,
+               'induk_pembelajaran_id' => $item->induk_pembelajaran_id,
                'nama_mata_pelajaran' => $item->nama_mata_pelajaran,
                'guru' => ($item->pengajar) ? $item->pengajar->nama_lengkap : $item->guru->nama_lengkap,
                'pd' => $item->anggota_rombel_count,
@@ -294,6 +297,7 @@ class DashboardController extends Controller
             $result_pilihan[] = [
                'no' => $no++,
                'pembelajaran_id' => $item_pilihan->pembelajaran_id,
+               'induk_pembelajaran_id' => $item_pilihan->induk_pembelajaran_id,
                'nama_mata_pelajaran' => $item_pilihan->nama_mata_pelajaran,
                'rombel' => $item_pilihan->rombongan_belajar->nama,
                'wali_kelas' => ($item_pilihan->rombongan_belajar->wali_kelas) ? $item_pilihan->rombongan_belajar->wali_kelas->nama_lengkap : '-',
